@@ -1,6 +1,7 @@
-const express = require('express')
-const productsRouter = require ('./routes/products_routes.js');
-const cartsRouter = require ('./routes/carts_routes.js');
+import ProductManager from './dao/ProductManager.js';
+import express from 'express';
+import productsRouter from './routes/products_routes.js';
+import cartsRouter from './routes/carts_routes.js';
 
 const app = express()
 app.use(express.json());
