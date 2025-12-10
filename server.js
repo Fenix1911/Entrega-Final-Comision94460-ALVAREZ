@@ -27,18 +27,8 @@ const productManager = new ProductManager(path.join(__dirname, 'data', 'products
 
 app.use("/api/products", productsRouter);
 app.use("/api/carts", cartsRouter);
+app.use("/", viewsRouter);
 
-
-app.get('/', async (req, res) => {
-    const products = await productManager.getProducts();
-    res.render('home', { products });
-});
-
-
-app.get('/realtimeproducts', async (req, res) => {
-    const products = await productManager.getProducts();
-    res.render('realTimeProducts', { products });
-});
 
 const httpServer = app.listen(8080, () => {
     console.log("Servidor escuchando en puerto 8080");

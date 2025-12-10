@@ -2,9 +2,24 @@
 
 <ul id="productList">
     {{#each products}}
-        <li>{{this.title}} - ${{this.price}}</li>
+        <li data-id="{{this.id}}">
+            {{this.title}} - ${{this.price}}
+            <button class="deleteBtn">Eliminar</button>
+        </li>
     {{/each}}
 </ul>
+
+<h2>Agregar producto</h2>
+
+<form id="productForm">
+    <input type="text" name="title" placeholder="Título" requerido>
+    <input type="text" name="description" placeholder="Descripción" requerido>
+    <input type="text" name="code" placeholder="Código" requerido>
+    <input type="number" name="price" placeholder="Precio" requerido>
+    <input type="number" name="stock" placeholder="Stock" requerido>
+    <input type="text" name="category" placeholder="Categoría" requerido>
+    <button type="submit">Crear</button>
+</form>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/realTimeProducts.js"></script>
