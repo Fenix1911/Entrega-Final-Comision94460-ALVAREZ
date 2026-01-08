@@ -1,65 +1,21 @@
-import fs from 'fs/promises';
-import { existsSync } from 'fs'
+import Product from '../models/Product.js';
 
 class ProductManager {
-    constructor (path) {
-        this.path = path;
-    }
-    
-    async readFile() {
-        try {
-            if (existsSync(this.path)) {
-                const products = await fs.readFile(this.path, 'utf-8');
-                return JSON.parse(products);
-            }
-            return [];
-        }   catch (error) {
-            throw new Error(error);
-        }
-    }    
-
-    async writeFile(products) {
-        try {
-            await fs.writeFile(this.path, JSON.stringify (products, null, 2));
-        } 
-        catch (error) {
-            throw new Error(error);
-        }
-    }
-
-    async getProducts() {
-        return await this.readFile();
+    async getProducts(filter = {}, options = {}) {
+        return await Product.paginate(filter, options);
     }
     async getProductById(id) {
-        const products = await this.readFile();
-        return products.find (product => product.id === parseInt(id));
+        return await Product.findById(id);
     }
-
     async addProduct(product) {
-        const products = await this.readFile();
-        const id = products.length ? products[products.length - 1].id + 1 : 1;
-        const newProduct = { id, ...product };
-        products.push(newProduct);
-        await this.writeFile (products);
-        return newProduct;
+        return await Product.create(product);
     }
-
     async updateProduct(id, update) {
-        const products = await this.readFile();
-        const index = products.findIndex (product => product.id === parseInt(id));
-        if (index === -1) return null;
-        update.id = products[index].id,
-        products[index] = { ...products[index], ...update };
-        await this.writeFile (products);
-        return products[index];
+        return await Product.findByIdAndUpdate(id, update, { new: true });
     }
     async deleteProduct(id) {
-        const products = await this.readFile();
-        const filteredProducts = products.filter (product => product.id !== parseInt(id));
-        if (products.length === filteredProducts.length) return false;
-        await this.writeFile (filteredProducts);
-        return filteredProducts;
+        return await Product.findByIdAndDelete(id);
     }
 }
 
-export default ProductManager;
+export default new ProductManager();

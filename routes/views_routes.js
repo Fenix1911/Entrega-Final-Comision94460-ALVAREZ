@@ -1,24 +1,41 @@
 import { Router } from "express";
 import ProductManager from "../dao/ProductManager.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = Router();
-const productManager = new ProductManager(
-    path.join(__dirname, "..", "data", "products.json")
-);
 
-router.get("/", async (req, res) => {
-    const products = await productManager.getProducts();
-    res.render("home", { products });
-});
+router.get("/products", async (req, res) => {
+    const {
+        limit = 10,
+        page = 1,
+        sort,
+        query
+    } = req.query;
 
-router.get("/realtimeproducts", async (req, res) => {
-    const products = await productManager.getProducts();
-    res.render("realtimeProducts", { products });
+    const filter = {};
+    if (query) {
+        if (query === "true" || query === "false") {
+            filter.status = query === "true";
+        } else {
+            filter.category = query;
+        }
+    }
+
+    const options = {
+        limit: Number(limit),
+        page: Number(page),
+        lean: true
+    };
+
+    if (sort) {
+        options.sort = { price: sort === "asc" ? 1 : -1 };
+    }
+
+    const result = await ProductManager.getProducts(filter, options);
+
+    res.render("products", {
+        products: result.docs,
+        pagination: result
+    });
 });
 
 export default router;

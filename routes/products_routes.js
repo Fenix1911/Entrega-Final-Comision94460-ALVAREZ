@@ -1,59 +1,121 @@
 import { Router } from "express";
 import ProductManager from "../dao/ProductManager.js";
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = Router();
-const productManager = new ProductManager(
-    path.join(__dirname, '..', 'data', 'products.json')
-);
 
-router.get('/', async (req, res) => {
-  const products = await productManager.getProducts();
-  res.json(products);
-})
+/**
+ * GET /api/products
+ * Query params:
+ * - limit
+ * - page
+ * - sort (asc | desc)
+ * - query (category o status)
+ */
 
-router.get('/:pid', async (req, res) => {
-    const product = await productManager.getProductById(parseInt(req.params.pid));
-    if (!product) return res.status(404).json({ error: "El producto no fue encontrado" });
-    res.json(product);
+router.get("/", async (req, res) => {
+    try {
+        const {
+            limit = 10,
+            page = 1,
+            sort,
+            query
+        } = req.query;
+
+        const filter = {};
+
+        if (query) {
+            if (query === "true" || query === "false") {
+                filter.status = query === "true";
+            } else {
+                filter.category = query;
+            }
+        }
+
+        const options = {
+            page: Number(page),
+            limit: Number(limit),
+            lean: true
+        };
+
+        if (sort === "asc" || sort === "desc") {
+            options.sort = { price: sort === "asc" ? 1 : -1 };
+        }
+
+        const result = await ProductManager.getProducts(filter, options);
+
+        res.json({
+            status: "success",
+            payload: result.docs,
+            totalPages: result.totalPages,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage,
+            page: result.page,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevLink: result.hasPrevPage
+                ? `/api/products?page=${result.prevPage}`
+                : null,
+            nextLink: result.hasNextPage
+                ? `/api/products?page=${result.nextPage}`
+                : null
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: "error", error: error.message });
+    }
 });
 
-router.post('/', async (req, res) => {
-    const newProduct = await productManager.addProduct({ 
-        title: req.body.title,
-        description: req.body.description,
-        code: req.body.code,
-        price: req.body.price,
-        status: req.body.status ?? true,
-        stock: req.body.stock,
-        category: req.body.category,
-        thumbnails: req.body.thumbnails || []
-    });
+router.post("/", async (req, res) => {
+    try {
+        const newProduct = await ProductManager.addProduct(req.body);
 
-    const io = req.app.get('io');
-    io.emit('updatedProducts', await productManager.getProducts()); 
+        res.status(201).json({
+            status: "success",
+            payload: newProduct
+        });
 
-    res.status(201).json(newProduct);
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            error: error.message
+        });
+    }
 });
 
-router.put('/:pid', async (req, res) => {
-    const updatedProduct = await productManager.updateProduct(req.params.pid, req.body);
-    if (!updatedProduct) return res.status(404).json({ error: "El producto no fue encontrado" });
-    res.json(updatedProduct);
+router.get("/:pid", async (req, res) => {
+    try {
+        const product = await ProductManager.getProductById(req.params.pid);
+        if (!product) {
+            return res.status(404).json({ status: "error", error: "Producto no encontrado" });
+        }
+        res.json({ status: "success", payload: product });
+    } catch (error) {
+        res.status(400).json({ status: "error", error: "ID inválido" });
+    }
 });
 
-router.delete('/:pid', async (req, res) => {
-    const result = await productManager.deleteProduct(req.params.pid);
-    if (!result) return res.status(404).json({ error: "El producto no fue encontrado" });
+router.put("/:pid", async (req, res) => {
+    try {
+        const updated = await ProductManager.updateProduct(req.params.pid, req.body);
+        if (!updated) {
+            return res.status(404).json({ status: "error", error: "Producto no encontrado" });
+        }
+        res.json({ status: "success", payload: updated });
+    } catch (error) {
+        res.status(400).json({ status: "error", error: error.message });
+    }
+});
 
-    const io = req.app.get('io');
-    io.emit('updatedProducts', await productManager.getProducts());
-
-    res.json({ message: "Producto eliminado exitosamente", products: result });
+router.delete("/:pid", async (req, res) => {
+    try {
+        const deleted = await ProductManager.deleteProduct(req.params.pid);
+        if (!deleted) {
+            return res.status(404).json({ status: "error", error: "Producto no encontrado" });
+        }
+        res.json({ status: "success", message: "Producto eliminado" });
+    } catch (error) {
+        res.status(400).json({ status: "error", error: error.message });
+    }
 });
 
 export default router;
