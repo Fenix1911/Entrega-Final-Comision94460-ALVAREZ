@@ -5,7 +5,7 @@ class ProductManager {
         return await Product.paginate(filter, options);
     }
     async getProductById(id) {
-        return await Product.findById(id);
+        return await Product.findById(id).lean();
     }
     async addProduct(product) {
         return await Product.create(product);
