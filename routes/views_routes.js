@@ -65,6 +65,8 @@ router.get("/products/:pid", async (req, res) => {
             return res.status(404).send("Producto no encontrado");
         }
 
+
+        //Se utiliza un ID de carrito fijo para poder probar la funcionalidad de agregar al carrito desde la vista de detalle del producto.
         res.render("productDetail", {
             product,
             cartId: "6960296d8c507802b7c8fadb"
